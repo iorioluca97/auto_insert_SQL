@@ -6,25 +6,30 @@ import time
 
 
 class insertExcelSQL:
-    def __init__(self, filepath, schema):
+    def __init__(self, filepath, schema, limit_rows):
         '''Define the full path (absolute) of the file to create the sql inserts.'''
         self.SQL_SCHEMA = schema
         self.filepath = filepath
+        self.limit_rows = limit_rows
         self.fileName = self.filepath.split("\\")[-1]
         self.abspath = self.filepath.split(self.fileName)[0]
 
 
     def ifExists(self):
         '''Check the existence of the path'''
-        try:
-            os.chdir(self.abspath)
-            if  self.fileName in os.listdir(self.abspath):
-                print(f"File trovato al path: {self.abspath}")
-                return True
+        if os.path.exists(self.filepath):
+            try:
+                os.chdir(self.abspath)
+            except Exception:
+                print("Absolute path not exists!")
             else:
-                print("File non presente nel path indicato")
-        except:
-            print("Path non valido")
+                if self.fileName in os.listdir(self.abspath):
+                    print(f"File trovato al path: {self.abspath}")
+                    return True
+                else:
+                    print("File non presente nel path indicato")
+        else:
+            raise Exception("Filepath Error")
 
 
     def defineFileOutputName(self):
@@ -41,14 +46,27 @@ class insertExcelSQL:
         
         self.OUTPUT_FILEPATH = OUTPUT_FILEPATH
         return self.OUTPUT_FILEPATH
-         
+
+
+    def read_df(self):
+        if os.path.exists(self.filepath):
+            if self.fileName.endswith('.xls'):
+                  df = pd.read_excel(self.filepath)
+            elif self.fileName.endswith('.csv'):
+                  df = pd.read_csv(self.filepath)
+            else: print(f"Metodo di lettura del df ancora non implementato: {self.fileName.endswith('.csv')}")
+        else:
+            raise Exception("Filepath Error")
+
+        self.df = df.fillna("null")
+        return df
+
+
+
     def create_SQL_file(self):
         '''Define the schema to be used in each sql statement to perform
         the query. It can be inserted when launching main application.'''
        
-        # if "." in self.SQL_SCHEMA:
-        #       db = self.SQL_SCHEMA.split(".")[0]
-        #       table = self.SQL_SCHEMA.split(".")[1]
 
         with open(self.OUTPUT_FILEPATH, "w") as insert:
                 # SCRITTURA DELLA PRIMA RIGA
@@ -56,8 +74,7 @@ class insertExcelSQL:
                 insert.close()   
 
         '''You can set a limit amount of insert by modifyng the limit_rows param, otherwise the sql file will be comprehensive by all insert rows.'''
-        # self.limit_rows = int(input())
-        self.limit_rows=200
+        
         self.read_df()
         col_number = len(self.df.columns)
 
@@ -158,18 +175,7 @@ class insertExcelSQL:
 
 
 
-    def read_df(self):
-        if self.fileName.endswith('.xls'):
-                df = pd.read_excel(self.filepath)
-                df.fillna("null", inplace=True)
-                
-        elif self.fileName.endswith('.csv'):
-                df = pd.read_csv(self.filepath)
-                df.fillna("null", inplace=True)
-        else: print(f"Metodo di lettura del df ancora non implementato: {self.fileName.endswith('.csv')}")
-        
-        self.df = df
-        return df
+
     
        
 
@@ -183,14 +189,18 @@ class insertExcelSQL:
 
 
 
-
-
 def main():
-      filepath = sys.argv[1]
-      schema = sys.argv[2]
-      # filepath = 'C:\\Users\\luiorio\\OneDrive - Capgemini\\Desktop\\export.csv'
-      
-      x = insertExcelSQL(filepath=filepath, schema = schema)
+      filepath = str(sys.argv[1])
+      schema = str(sys.argv[2])
+      if len(sys.argv) == 4:
+            try:
+                limit_rows = int(sys.argv[3])
+            except ValueError:
+                  print("Limit rows parameter must be an integer.")
+      else:      
+            limit_rows = 0
+
+      x = insertExcelSQL(filepath=filepath, schema = schema, limit_rows =limit_rows)
       t = time.process_time()
       x.runSQL()
       elapsed_time = time.process_time() - t
