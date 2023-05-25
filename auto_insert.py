@@ -83,6 +83,7 @@ class insertExcelSQL:
 
         self.null_values_handling()
         self.bool_values_handling()
+        self.parenthesis_handling()
 
 
         # TERMINE DI SCRITTURA
@@ -105,6 +106,24 @@ class insertExcelSQL:
                 new_file.write(new_file_content)
                 new_file.close()
         print("Termine gestione valori nulli.")
+
+    def parenthesis_handling(self):
+        print("Inizio gestione parentesi.")
+
+        new_file_content = ""
+
+        with open (self.OUTPUT_FILEPATH,"r") as file:
+                for line in file:
+                        stripped_line = line.strip()
+                        new_line = stripped_line.replace("[","")
+                        new_line = new_line.replace("]","")
+                        new_file_content += new_line+"\n"
+                file.close()
+
+        with open (self.OUTPUT_FILEPATH,"w") as new_file:
+                new_file.write(new_file_content)
+                new_file.close()
+        print("Termine gestione parentesi.")
 
 
     def bool_values_handling(self):
